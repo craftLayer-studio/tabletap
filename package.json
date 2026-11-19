@@ -1,0 +1,32 @@
+{
+  "name": "tabletap",
+  "version": "0.1.0",
+  "private": true,
+  "description": "QR-at-the-table ordering, kitchen display and pay-at-table for Indian restaurants and cafes. Prototype.",
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "next": "16.4.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.4.6",
+    "typescript": "^5",
+    "vitest": "^5.1.0"
+  },
+  "packageManager": "pnpm@11.28.6",
+  "engines": {
+    "node": ">=20.9"
+  }
+}
