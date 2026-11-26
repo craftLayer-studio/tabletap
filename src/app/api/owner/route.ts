@@ -1,9 +1,9 @@
 import { handle } from "@/server/http";
+import { requireStaff } from "@/server/session";
 import { ownerView } from "@/server/store";
-import { DEMO_RESTAURANT } from "@/server/seed";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  return handle(() => ownerView(DEMO_RESTAURANT.id));
+  return handle(async () => ownerView((await requireStaff("owner:view")).restaurantId));
 }

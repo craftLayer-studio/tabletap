@@ -16,3 +16,5 @@ export async function resetDemo(now = Date.now()): Promise<void> {
     await seedDemo(tx, now);
   });
 }
+export * from "./admin";
+export * from "./auth";

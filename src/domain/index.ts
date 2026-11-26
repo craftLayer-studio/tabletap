@@ -9,3 +9,6 @@ export * from "./table";
 export * from "./report";
 export * from "./time";
 export * from "./restaurant";
+export * from "./roles";
+export * from "./phone";
+export * from "./menu-edit";

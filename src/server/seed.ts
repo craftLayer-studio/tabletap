@@ -217,3 +217,11 @@ export const DEMO_MENU: Menu = {
     },
   ],
 };
+
+/** Demo staff. Phone numbers use the 98000 0000x range and are made up; sign in with the code shown on screen. */
+export const DEMO_STAFF = [
+  { id: "staff-owner", name: "Ananya Rao", phone: "+919800000001", role: "owner" },
+  { id: "staff-manager", name: "Vikram Joshi", phone: "+919800000002", role: "manager" },
+  { id: "staff-waiter", name: "Ravi Kumar", phone: "+919800000003", role: "waiter" },
+  { id: "staff-kitchen", name: "Imran Shaikh", phone: "+919800000004", role: "kitchen" },
+] as const;

@@ -1,12 +1,23 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { formatINR, TABLE_STATE_LABELS } from "@/domain";
-import { useLive } from "@/lib/live";
+import { postJson, useLive } from "@/lib/live";
 import type { OwnerView } from "@/server/store";
 import { AppHeader } from "./AppHeader";
 
-export function OwnerApp() {
+export function OwnerApp({ canReset }: { canReset: boolean }) {
   const live = useLive<OwnerView>("/api/owner", 5000);
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const reset = async () => {
+    if (!window.confirm("Wipe all demo data and start again? You will be signed out.")) return;
+    setBusy(true);
+    await postJson("/api/demo/reset").catch(() => undefined);
+    router.push("/login");
+    router.refresh();
+  };
   const data = live.data;
   const s = data?.summary;
   return (
@@ -88,6 +99,15 @@ export function OwnerApp() {
               </ul>
               {s.cancelledOrders > 0 ? <p className="muted small">{s.cancelledOrders} cancelled order(s) not counted.</p> : null}
             </section>
+
+            {canReset && data.restaurant.isDemo ? (
+              <p className="muted small reset-row">
+                Demo data is stored in the database.{" "}
+                <button type="button" className="link-button" disabled={busy} onClick={reset}>
+                  Reset demo
+                </button>
+              </p>
+            ) : null}
           </>
         )}
       </main>

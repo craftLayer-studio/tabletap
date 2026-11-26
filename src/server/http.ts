@@ -1,4 +1,5 @@
 import { StoreError } from "./store/errors";
+import { GUEST_LIMITS, RateLimiter } from "./rate-limit";
 
 /** Run a store call and turn the result or a StoreError into a JSON response. */
 export async function handle(fn: () => unknown): Promise<Response> {
@@ -55,4 +56,31 @@ export function oneOf<T extends string>(body: Record<string, unknown>, key: stri
   const v = body[key];
   if (typeof v !== "string" || !allowed.includes(v as T)) throw new BadRequest(`${key} must be one of ${allowed.join(", ")}`);
   return v as T;
+}
+
+const g = globalThis as unknown as { __tabletapLimiter?: RateLimiter };
+const limiter = (g.__tabletapLimiter ??= new RateLimiter());
+
+export function clientIp(request: Request): string {
+  const fwd = request.headers.get("x-forwarded-for");
+  return fwd?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "local";
+}
+
+/** Rate-limit a public write per client IP and scope (usually the table token). Throws a 429. */
+export function limit(request: Request, kind: keyof typeof GUEST_LIMITS, scope = ""): void {
+  const result = limiter.hit(`${kind}:${clientIp(request)}:${scope}`, GUEST_LIMITS[kind]);
+  if (!result.ok) throw new StoreError(429, `Too many requests. Try again in ${result.retryAfterSeconds} s.`);
+}
+
+export function bool(body: Record<string, unknown>, key: string): boolean {
+  const v = body[key];
+  if (v === undefined) return false;
+  if (typeof v !== "boolean") throw new BadRequest(`${key} must be true or false`);
+  return v;
+}
+
+export function int(body: Record<string, unknown>, key: string): number {
+  const v = num(body, key);
+  if (!Number.isInteger(v)) throw new BadRequest(`${key} must be a whole number`);
+  return v;
 }

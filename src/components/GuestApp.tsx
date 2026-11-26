@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   addToCart,
   ALLERGEN_LABELS,
@@ -38,6 +38,9 @@ import type { GuestView } from "@/server/store";
 
 type Tab = "menu" | "orders" | "bill";
 
+/** API base for this table, e.g. "/api/t/<token>". */
+const ApiBase = createContext("");
+
 const storageKey = (tableId: string) => `tabletap:session:${tableId}`;
 
 function readStored(tableId: string): string | undefined {
@@ -57,7 +60,9 @@ function writeStored(tableId: string, sessionId: string | undefined) {
   }
 }
 
-export function GuestApp({ tableId }: { tableId: string }) {
+export function GuestApp({ token }: { token: string }) {
+  const tableId = token;
+  const api = `/api/t/${token}`;
   const [sessionId, setSessionId] = useState<string>();
   const [joinError, setJoinError] = useState<string>();
   const [joinAttempt, setJoinAttempt] = useState(0);
@@ -68,7 +73,7 @@ export function GuestApp({ tableId }: { tableId: string }) {
     const join = async () => {
       const stored = readStored(tableId);
       if (stored) {
-        const res = await fetch(`/api/tables/${tableId}?session=${encodeURIComponent(stored)}`, { cache: "no-store" });
+        const res = await fetch(`${api}?session=${encodeURIComponent(stored)}`, { cache: "no-store" });
         if (res.ok) {
           if (alive) setSessionId(stored);
           return;
@@ -76,7 +81,7 @@ export function GuestApp({ tableId }: { tableId: string }) {
         writeStored(tableId, undefined);
       }
       try {
-        const { sessionId: fresh } = await postJson<{ sessionId: string }>(`/api/tables/${tableId}/join`);
+        const { sessionId: fresh } = await postJson<{ sessionId: string }>(`${api}/join`);
         writeStored(tableId, fresh);
         if (alive) setSessionId(fresh);
       } catch (err) {
@@ -87,10 +92,10 @@ export function GuestApp({ tableId }: { tableId: string }) {
     return () => {
       alive = false;
     };
-  }, [tableId, joinAttempt]);
+  }, [tableId, api, joinAttempt]);
 
   const live = useLive<GuestView>(
-    sessionId ? `/api/tables/${tableId}?session=${encodeURIComponent(sessionId)}` : null,
+    sessionId ? `${api}?session=${encodeURIComponent(sessionId)}` : null,
   );
 
   const startNewVisit = () => {
@@ -122,7 +127,11 @@ export function GuestApp({ tableId }: { tableId: string }) {
       </main>
     );
   }
-  return <GuestScreen view={live.data} clockOffset={live.clockOffset} error={live.error} refresh={live.refresh} onNewVisit={startNewVisit} />;
+  return (
+    <ApiBase.Provider value={api}>
+      <GuestScreen view={live.data} clockOffset={live.clockOffset} error={live.error} refresh={live.refresh} onNewVisit={startNewVisit} />
+    </ApiBase.Provider>
+  );
 }
 
 function GuestScreen({
@@ -143,7 +152,7 @@ function GuestScreen({
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<{ kind: "ok" | "error"; text: string }>();
   const closed = view.session.closedAt !== undefined;
-  const base = `/api/tables/${view.table.id}`;
+  const base = useContext(ApiBase);
 
   const run = async (fn: () => Promise<unknown>, ok?: string) => {
     setBusy(true);
@@ -588,7 +597,7 @@ function BillSection({
   const bill = view.bill;
   const [tipPercent, setTipPercent] = useState(bill?.summary.tipPercent ?? 0);
   const [splitCount, setSplitCount] = useState(bill?.parts.length ?? 1);
-  const base = `/api/tables/${view.table.id}`;
+  const base = useContext(ApiBase);
   const billable = view.orders.filter((o) => o.status !== "cancelled");
   const waitingConfirm = view.orders.some((o) => o.status === "placed");
 
@@ -712,6 +721,7 @@ function SharesCard({
   busy: boolean;
   run: (fn: () => Promise<unknown>, ok?: string) => Promise<boolean>;
 }) {
+  const base = useContext(ApiBase);
   const [method, setMethod] = useState<PaymentMethod>("upi");
   const [email, setEmail] = useState("");
   const firstUnpaid = bill.parts.find((p) => !p.payment)?.index ?? 0;
@@ -799,7 +809,7 @@ function SharesCard({
           onClick={() =>
             run(
               () =>
-                postJson(`/api/tables/${view.table.id}/bill/pay`, {
+                postJson(`${base}/bill/pay`, {
                   sessionId: view.session.id,
                   partIndex: part.index,
                   method,
@@ -829,6 +839,7 @@ function PaidSection({
   run: (fn: () => Promise<unknown>, ok?: string) => Promise<boolean>;
   onNewVisit: () => void;
 }) {
+  const base = useContext(ApiBase);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
   return (
@@ -869,7 +880,7 @@ function PaidSection({
             className="btn"
             disabled={busy || rating === 0}
             onClick={() =>
-              run(() => postJson(`/api/tables/${view.table.id}/review`, { sessionId: view.session.id, rating, comment }), "Review saved.")
+              run(() => postJson(`${base}/review`, { sessionId: view.session.id, rating, comment }), "Review saved.")
             }
           >
             Send review

@@ -18,7 +18,7 @@ import {
 } from "@/domain";
 import { schema as s, type Db, type DbOrTx } from "./db/client";
 import { insertMenuItem, insertOrder, insertPayment, newId, newToken, saveBill, toDate } from "./store/repo";
-import { DEMO_MENU, DEMO_RESTAURANT, DEMO_TABLES } from "./seed";
+import { DEMO_MENU, DEMO_RESTAURANT, DEMO_STAFF, DEMO_TABLES } from "./seed";
 
 const MIN = 60_000;
 
@@ -58,6 +58,7 @@ export async function seedDemo(db: DbOrTx, now = Date.now()): Promise<void> {
     DEMO_TABLES.map((t, i) => ({ id: t.id, restaurantId: r.id, label: t.label, seats: t.seats, qrToken: newToken(), sortOrder: i })),
   );
   await insertMenu(db, r.id, DEMO_MENU);
+  await db.insert(s.staffUsers).values(DEMO_STAFF.map((u) => ({ ...u, restaurantId: r.id })));
 
   const dayStart = startOfDay(now);
   const earlier = (minutesAgo: number) => Math.max(dayStart + MIN, now - minutesAgo * MIN);

@@ -1,5 +1,8 @@
 import Link from "next/link";
-import { DEMO_RESTAURANT, DEMO_TABLES } from "@/server/seed";
+import { DEMO_RESTAURANT } from "@/server/seed";
+import { listTablesWithTokens } from "@/server/store";
+
+export const dynamic = "force-dynamic";
 
 const STEPS = [
   "Scan the table QR: the menu opens in the browser, no app.",
@@ -14,11 +17,12 @@ const STEPS = [
   "The owner sees tables, orders and sales for today.",
 ];
 
-export default function Home() {
+export default async function Home() {
+  const tables = await listTablesWithTokens(DEMO_RESTAURANT.id);
   return (
     <main id="main" className="home">
       <section className="hero">
-        <p className="eyebrow">Prototype · in-memory · not production</p>
+        <p className="eyebrow">MVP · demo data · simulated messaging and payments</p>
         <h1>
           Table<span>Tap</span>
         </h1>
@@ -32,13 +36,14 @@ export default function Home() {
         <h2 id="try">Try the demo</h2>
         <p className="muted">
           {DEMO_RESTAURANT.name} is a made-up demo restaurant. Open a table on one device (or tab) and the staff and
-          kitchen screens on another; they refresh every few seconds.
+          kitchen screens on another; they refresh every few seconds. Staff screens need a sign-in: pick a demo
+          account on the sign-in page and use the code shown on screen.
         </p>
         <h3>Guest view: pick a table</h3>
         <ul className="table-links">
-          {DEMO_TABLES.map((t) => (
+          {tables.map((t) => (
             <li key={t.id}>
-              <Link href={`/t/${t.id}`} className="btn btn--ghost">
+              <Link href={`/t/${t.qrToken}`} className="btn btn--ghost">
                 Table {t.label}
                 <small>{t.seats} seats</small>
               </Link>
@@ -62,6 +67,11 @@ export default function Home() {
               Owner: today
             </Link>
           </li>
+          <li>
+            <Link href="/login" className="btn btn--ghost">
+              Staff sign in
+            </Link>
+          </li>
         </ul>
       </section>
 
@@ -73,8 +83,8 @@ export default function Home() {
           ))}
         </ol>
         <p className="muted">
-          Payments are simulated. Nothing is charged, no email is sent and data resets when the server restarts. See
-          PLAN.md in the repository for the road to a real pilot.
+          Payments and messages are simulated. Nothing is charged and no SMS, WhatsApp or email is sent. See PLAN.md
+          in the repository for the road to a real pilot.
         </p>
       </section>
     </main>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 /** Poll interval for "live" screens. M1 replaces polling with server-sent events (see PLAN.md). */
@@ -14,6 +15,7 @@ interface WithNow {
  * a `refresh` to call after a mutation, and the offset between server and browser clocks.
  */
 export function useLive<T extends WithNow>(url: string | null, intervalMs = POLL_MS) {
+  const router = useRouter();
   const [data, setData] = useState<T>();
   const [error, setError] = useState<string>();
   const [status, setStatus] = useState<number>();
@@ -26,6 +28,11 @@ export function useLive<T extends WithNow>(url: string | null, intervalMs = POLL
     const load = async () => {
       try {
         const res = await fetch(url, { cache: "no-store" });
+        if (res.status === 401) {
+          // Staff session expired: go to the login page and come back here afterwards.
+          router.replace(`/login?next=${encodeURIComponent(window.location.pathname)}`);
+          return;
+        }
         const json = await res.json();
         if (!alive) return;
         setStatus(res.status);
@@ -48,7 +55,7 @@ export function useLive<T extends WithNow>(url: string | null, intervalMs = POLL
       alive = false;
       clearInterval(timer);
     };
-  }, [url, intervalMs, tick]);
+  }, [url, intervalMs, tick, router]);
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
   return { data, error, status, clockOffset, refresh };
