@@ -225,3 +225,26 @@ export const DEMO_STAFF = [
   { id: "staff-waiter", name: "Ravi Kumar", phone: "+919800000003", role: "waiter" },
   { id: "staff-kitchen", name: "Imran Shaikh", phone: "+919800000004", role: "kitchen" },
 ] as const;
+
+/** Clearly fake placeholder for the review funnel; owners paste their own Google review link in Settings. */
+export const DEMO_GOOGLE_REVIEW_URL = "https://example.com/demo-google-review-link";
+
+/**
+ * Made-up demo diners (phone numbers in the unused-looking 99990 000xx range). Visit history drives the CRM
+ * segments: Priya and Arjun are regulars, Rahul and Kavya lapsed, Sneha new.
+ */
+export const DEMO_CUSTOMERS: {
+  name: string;
+  phone: string;
+  visitsDaysAgo: number[];
+  service: boolean;
+  marketing: boolean;
+  redeemsCampaignDaysAgo?: number;
+  lowRatingDaysAgo?: number;
+}[] = [
+  { name: "Priya Sharma", phone: "+919999000001", visitsDaysAgo: [25, 12, 3], service: true, marketing: true },
+  { name: "Rahul Verma", phone: "+919999000002", visitsDaysAgo: [60, 45], service: false, marketing: true },
+  { name: "Sneha Iyer", phone: "+919999000003", visitsDaysAgo: [5], service: true, marketing: false, lowRatingDaysAgo: 5 },
+  { name: "Arjun Mehta", phone: "+919999000004", visitsDaysAgo: [40, 20, 8, 2], service: true, marketing: true, redeemsCampaignDaysAgo: 8 },
+  { name: "Kavya Nair", phone: "+919999000005", visitsDaysAgo: [50], service: false, marketing: true },
+];

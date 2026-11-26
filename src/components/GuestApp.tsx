@@ -35,6 +35,7 @@ import {
 } from "@/domain";
 import { postJson, shortId, useLive, useNow } from "@/lib/live";
 import type { GuestView } from "@/server/store";
+import { CouponCard, PhoneCapture, SpinCard } from "./GuestGrowth";
 
 type Tab = "menu" | "orders" | "bill";
 
@@ -661,7 +662,19 @@ function BillSection({
         </div>
       ) : null}
 
+      {revisable ? (
+        <CouponCard
+          view={view}
+          base={base}
+          busy={busy}
+          run={run}
+          onApplied={() =>
+            bill ? postJson(`${base}/bill`, { sessionId: view.session.id, tipPercent: bill.summary.tipPercent, splitCount: bill.parts.length }) : Promise.resolve()
+          }
+        />
+      ) : null}
       {bill ? <BillCard bill={bill} /> : null}
+      <PhoneCapture view={view} base={base} busy={busy} run={run} />
       {bill ? <SharesCard view={view} bill={bill} busy={busy} run={run} /> : null}
     </section>
   );
@@ -690,6 +703,12 @@ function BillCard({ bill }: { bill: Bill }) {
             <th scope="row">Subtotal</th>
             <td>{formatINR(s.subtotal)}</td>
           </tr>
+          {s.discount ? (
+            <tr className="bill-discount">
+              <th scope="row">{s.discountLabel ?? "Discount"}</th>
+              <td>−{formatINR(s.discount)}</td>
+            </tr>
+          ) : null}
           <tr>
             <th scope="row">GST {s.taxPercent}%</th>
             <td>{formatINR(s.tax)}</td>
@@ -851,10 +870,23 @@ function PaidSection({
           {bill.receiptEmail ? `. Receipt address saved: ${bill.receiptEmail} (not sent in the prototype).` : "."}
         </p>
       </div>
+      <SpinCard view={view} base={base} busy={busy} run={run} />
+      <PhoneCapture view={view} base={base} busy={busy} run={run} />
       {view.review ? (
         <div className="card">
           <h2>Thanks for the review</h2>
           <p aria-label={`${view.review.rating} out of 5`}>{"★".repeat(view.review.rating)}{"☆".repeat(5 - view.review.rating)}</p>
+          {view.review.rating >= 4 && view.growth.googleReviewUrl ? (
+            <>
+              <p>Glad you enjoyed it! Would you share that on Google? It helps a small restaurant a lot.</p>
+              <a className="btn" href={view.growth.googleReviewUrl} target="_blank" rel="noopener noreferrer">
+                Post a Google review
+              </a>
+            </>
+          ) : null}
+          {view.review.rating <= 3 ? (
+            <p className="muted">Sorry it was not great. Your feedback went privately to the owner, who will look into it.</p>
+          ) : null}
         </div>
       ) : (
         <div className="card">

@@ -45,6 +45,7 @@ export function toRestaurant(row: RestaurantRow): Restaurant {
     taxPercent: row.taxPercent,
     upiVpa: row.upiVpa,
     isDemo: row.isDemo,
+    googleReviewUrl: row.googleReviewUrl ?? undefined,
   };
 }
 
@@ -306,6 +307,7 @@ export async function loadBills(
       summary: {
         lines: r.lines,
         subtotal: r.subtotal,
+        ...(r.discount > 0 ? { discount: r.discount, discountLabel: r.discountLabel ?? "Discount" } : {}),
         taxPercent: r.taxPercent,
         tax: r.tax,
         tipPercent: r.tipPercent,
@@ -341,6 +343,8 @@ export async function saveBill(db: DbOrTx, restaurantId: string, bill: Bill): Pr
     sessionId: bill.sessionId,
     lines: bill.summary.lines,
     subtotal: bill.summary.subtotal,
+    discount: bill.summary.discount ?? 0,
+    discountLabel: bill.summary.discountLabel ?? null,
     taxPercent: bill.summary.taxPercent,
     tax: bill.summary.tax,
     tipPercent: bill.summary.tipPercent,

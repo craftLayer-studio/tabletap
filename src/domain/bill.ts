@@ -25,6 +25,9 @@ export interface BillLine {
 export interface BillSummary {
   lines: BillLine[];
   subtotal: Paise;
+  /** Coupon discount, taken off the subtotal before tax and tip. 0 when none. */
+  discount?: Paise;
+  discountLabel?: string;
   taxPercent: number;
   tax: Paise;
   tipPercent: number;
@@ -34,11 +37,12 @@ export interface BillSummary {
 
 /**
  * Bill for a set of orders. Cancelled orders are excluded. Identical lines (same item, size and price)
- * across orders are merged. Tax and tip are both computed on the subtotal and rounded to the paisa.
+ * across orders are merged. A discount (coupon) comes off the subtotal first; tax and tip are computed on
+ * what remains and rounded to the paisa.
  */
 export function computeBill(
   orders: Order[],
-  opts: { taxPercent: number; tipPercent: number },
+  opts: { taxPercent: number; tipPercent: number; discount?: { amount: (subtotal: Paise) => Paise; label: string } },
 ): BillSummary {
   if (opts.tipPercent < 0 || opts.tipPercent > MAX_TIP_PERCENT) {
     throw new Error(`tip must be between 0 and ${MAX_TIP_PERCENT} percent`);
@@ -64,16 +68,19 @@ export function computeBill(
   }
   const lines = [...merged.values()];
   const subtotal = lines.reduce((s, l) => s + l.total, 0);
-  const tax = percentOf(subtotal, opts.taxPercent);
-  const tip = percentOf(subtotal, opts.tipPercent);
+  const discount = opts.discount ? Math.max(0, Math.min(subtotal, Math.round(opts.discount.amount(subtotal)))) : 0;
+  const taxable = subtotal - discount;
+  const tax = percentOf(taxable, opts.taxPercent);
+  const tip = percentOf(taxable, opts.tipPercent);
   return {
     lines,
     subtotal,
+    ...(discount > 0 ? { discount, discountLabel: opts.discount!.label } : {}),
     taxPercent: opts.taxPercent,
     tax,
     tipPercent: opts.tipPercent,
     tip,
-    total: subtotal + tax + tip,
+    total: taxable + tax + tip,
   };
 }
 

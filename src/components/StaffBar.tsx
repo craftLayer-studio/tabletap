@@ -7,7 +7,10 @@ const LINKS: { href: string; label: string; show: (role: StaffRole) => boolean }
   { href: "/kitchen", label: "Kitchen", show: (r) => can(r, "kitchen:view") },
   { href: "/owner", label: "Today", show: (r) => can(r, "owner:view") },
   { href: "/owner/menu", label: "Menu", show: (r) => can(r, "menu:edit") },
+  { href: "/owner/customers", label: "Customers", show: (r) => can(r, "customers:view") },
+  { href: "/owner/campaigns", label: "Campaigns", show: (r) => can(r, "campaigns:send") },
   { href: "/owner/qr", label: "QR codes", show: (r) => can(r, "tables:manage") },
+  { href: "/owner/settings", label: "Settings", show: (r) => can(r, "settings:edit") },
 ];
 
 /** Signed-in staff member, the screens their role can open, and sign out. Rendered by each staff page. */

@@ -2,8 +2,9 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.APP_URL || "https://dineloop.craftlayer.store"),
   title: { default: "TableTap", template: "%s · TableTap" },
-  description: "Scan, order, track and pay at the table. A prototype for Indian restaurants and cafes.",
+  description: "Scan, order, track and pay at the table. For Indian restaurants and cafes.",
 };
 
 export const viewport: Viewport = {

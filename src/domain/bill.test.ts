@@ -114,3 +114,25 @@ describe("bill settlement", () => {
     expect(isValidEmail("not an email")).toBe(false);
   });
 });
+
+describe("computeBill with a coupon", () => {
+  it("takes the discount off before tax and tip", async () => {
+    const { createOrder } = await import("./order");
+    const order = createOrder({
+      id: "o",
+      restaurantId: "r",
+      tableId: "t",
+      sessionId: "s",
+      at: 0,
+      items: [{ itemId: "a", variantId: "v", name: "A", variantName: "Regular", unitPrice: 100000, qty: 1, station: "curry", prepMinutes: 5 }],
+    });
+    const bill = computeBill([order], { taxPercent: 5, tipPercent: 10, discount: { amount: (s) => s / 10, label: "10% off" } });
+    expect(bill.discount).toBe(10000);
+    expect(bill.discountLabel).toBe("10% off");
+    expect(bill.tax).toBe(4500);
+    expect(bill.tip).toBe(9000);
+    expect(bill.total).toBe(90000 + 4500 + 9000);
+    const capped = computeBill([order], { taxPercent: 5, tipPercent: 0, discount: { amount: () => 999999, label: "x" } });
+    expect(capped.total).toBe(0);
+  });
+});

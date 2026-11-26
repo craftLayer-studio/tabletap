@@ -7,4 +7,6 @@ export interface Restaurant {
   /** UPI ID. The demo one is deliberately not a real handle: never pay to it. */
   upiVpa: string;
   isDemo: boolean;
+  /** Google review link (for example a g.page/r/... URL). 4-5 star reviews are invited to post there. */
+  googleReviewUrl?: string;
 }

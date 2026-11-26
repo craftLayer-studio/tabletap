@@ -2,7 +2,7 @@
 
 TableTap is a QR-at-the-table ordering and payment system for Indian restaurants and cafes. Guests scan a code on the table, order from their own phone, follow their food, call a waiter, split the bill and pay at the table. Staff, kitchen and owner each get a live screen.
 
-This document is the plan. The repository also holds milestone M0, a working prototype (see [README.md](README.md)).
+This document is the plan. The repository holds the MVP: M0, most of M1 and the DineLoop growth P0 (see [README.md](README.md)).
 
 Nothing here claims customers, revenue, traction or market size. We have none yet. Numbers below are either computed by the prototype or explicitly marked as hypotheses.
 
@@ -124,7 +124,7 @@ Table state on the floor map is derived, never stored: no open session is free; 
 ## 7. Realtime approach
 
 - M0 (this repo): every screen polls a JSON endpoint every 2.5 s (owner every 5 s) and pauses while the tab is hidden. Simple and good enough for a demo on one machine.
-- M1: Postgres plus server-sent events (SSE). Each mutation writes the change and publishes an event on a per-restaurant channel (Postgres `LISTEN/NOTIFY` to start; a hosted pub/sub only if we outgrow it). Staff and kitchen screens hold one SSE connection; guest pages subscribe to their own session only. Clients still refetch on reconnect, so a missed event never leaves a screen stale.
+- M1 (deferred, screens still poll): Postgres plus server-sent events (SSE). Each mutation writes the change and publishes an event on a per-restaurant channel (Postgres `LISTEN/NOTIFY` to start; a hosted pub/sub only if we outgrow it). Staff and kitchen screens hold one SSE connection; guest pages subscribe to their own session only. Clients still refetch on reconnect, so a missed event never leaves a screen stale.
 - Why SSE over WebSockets: updates flow server to client; writes are normal HTTP POSTs. SSE works through most proxies and is simpler to host.
 
 ## 8. Multi-tenancy
@@ -164,8 +164,8 @@ Rules:
 
 | Milestone | Scope | Exit criteria |
 | --- | --- | --- |
-| M0 prototype (done, this repo) | Domain module with tests, in-memory store, guest/staff/kitchen/owner screens, polling, simulated payments, CI | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` pass in CI; full table visit works end to end in the demo |
-| M1 database and auth | Postgres schema above, migrations, row-level security, staff login with roles, menu editor for owners, table QR tokens and printable QR sheet, SSE instead of polling, per-item station status, rate limits, error tracking | All M0 flows work against Postgres across restarts and multiple server instances; role checks on every staff action; seed script for demo data |
+| M0 prototype (done) | Domain module with tests, in-memory store, guest/staff/kitchen/owner screens, polling, simulated payments, CI | `pnpm typecheck`, `pnpm lint`, `pnpm test`, `pnpm build` pass in CI; full table visit works end to end in the demo |
+| M1 database and auth (mostly done: Postgres via Drizzle, migrations, seed, OTP login with roles, menu editor, QR tokens and sheet, rate limits; still open: RLS, SSE, per-item station status, error tracking) | Postgres schema above, migrations, row-level security, staff login with roles, menu editor for owners, table QR tokens and printable QR sheet, SSE instead of polling, per-item station status, rate limits, error tracking | All M0 flows work against Postgres across restarts and multiple server instances; role checks on every staff action; seed script for demo data |
 | M2 payments | Gateway integration (test mode first), webhooks, staff-confirmed cash and transfer, refunds path, email receipts through a transactional email provider, GST-correct receipts | A test-mode payment for a split bill completes end to end; no secrets in the repo; webhook replay is idempotent |
 | M3 pilot with one real restaurant | Real menu and photos, QR codes printed for every table, staff training, Hindi menu text if the restaurant wants it, monitoring, daily backup | One restaurant runs real service on TableTap for an agreed period (target: two weeks); we collect their feedback and our own measurements of order and payment times |
 

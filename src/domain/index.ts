@@ -12,3 +12,4 @@ export * from "./restaurant";
 export * from "./roles";
 export * from "./phone";
 export * from "./menu-edit";
+export * from "./growth";

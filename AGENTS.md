@@ -4,7 +4,7 @@ Rules for anyone (people or coding agents) changing this repository.
 
 ## What this is
 
-TableTap, a QR table-ordering prototype for Indian restaurants. Read [README.md](README.md) for how to run it and [PLAN.md](PLAN.md) for the product plan and milestones. Current milestone: M0 done, M1 next.
+TableTap, a QR table-ordering prototype for Indian restaurants. Read [README.md](README.md) for how to run it and [PLAN.md](PLAN.md) for the product plan and milestones. Current state: M1 (Postgres, auth, QR tokens, menu editor) and the DineLoop growth P0 (CRM, consent, loyalty, wheel, review funnel, simulated WhatsApp campaigns) are built; SSE, RLS and M2 payments are next.
 
 ## Ground rules
 
@@ -23,8 +23,20 @@ TableTap, a QR table-ordering prototype for Indian restaurants. Read [README.md]
 - Table state is derived (`deriveTableState`), never stored.
 - Route handlers stay thin: parse and validate input (`src/server/http.ts`), call the store, return JSON. Errors that the user should see are `StoreError` with an HTTP status.
 - The guest is untrusted. Prices, totals and amounts are always computed on the server from the menu and orders, never taken from the request.
+- Data access lives in `src/server/store/`; route handlers never import `db/` directly. Every query filters by `restaurant_id`, and every staff/owner route calls `requireStaff(permission)` (`src/server/session.ts`) before touching the store. Permissions are defined in `src/domain/roles.ts`.
+- Schema changes: edit `src/server/db/schema.ts`, run `pnpm db:generate`, commit the SQL in `drizzle/`. Never edit an applied migration.
+- Guest phone numbers: keep the DPDP notice, separate unticked opt-ins, the consent ledger (`consent_records`, append-only) and the opt-out link. Marketing goes only to customers whose latest marketing consent is granted.
+- Messaging goes through `src/server/messaging.ts`. Only the simulated adapter exists; no third-party network calls or API keys.
 - UI: plain CSS in `src/app/globals.css`, mobile first, brand colours ink `#101828`, accent `#465FFF`, light accent `#8A99FF`, canvas `#F7F8F5`. Every control needs an accessible name; keep touch targets at least 36 px.
 - Be honest in copy and docs: no invented customers, metrics or market numbers. Demo data must be labelled as demo.
+
+## Code
+
+Structure: `src/domain/` (pure rules, unit tests), `src/server/db/` (schema, client), `src/server/store/` (use cases, integration tests on in-memory PGlite), `src/server/{session,http,parse,rate-limit,messaging}.ts`, `src/app/` (pages and thin routes), `src/components/` (client screens), `drizzle/` (migrations).
+
+Commands: `pnpm dev`, `pnpm test`, `pnpm typecheck`, `pnpm lint`, `pnpm build`, `pnpm db:generate`, `pnpm db:migrate`, `pnpm db:seed`, `pnpm db:reset`. Local dev servers use a port from 3101 to 3199; stop them when done.
+
+Config: `APP_URL` (QR and share links; production `https://dineloop.craftlayer.store`), `DATABASE_URL` (optional Postgres), `SESSION_SECRET`, `DEMO_OTP`. See `.env.example`.
 
 ## Commits
 

@@ -15,6 +15,7 @@ import {
   isValidEmail,
   MAX_REVIEW_COMMENT,
   payPart,
+  routeReview,
   startOfDay,
   summarizeDay,
   transitionOrder,
@@ -26,6 +27,7 @@ import {
   type PaymentMethod,
   type Restaurant,
   type Review,
+  type ReviewRoute,
   type ServiceRequest,
   type ServiceRequestKind,
   type Table,
@@ -34,6 +36,7 @@ import {
 } from "@/domain";
 import { getDb, schema as s, type DbOrTx, type Tx } from "../db/client";
 import { StoreError } from "./errors";
+import { guestGrowth, onVisitPaid, visitDiscount, type GuestGrowth } from "./growth";
 import {
   insertOrder,
   insertPayment,
@@ -125,6 +128,7 @@ export interface GuestView {
   openRequests: ServiceRequest[];
   bill?: Bill;
   review?: Review;
+  growth: GuestGrowth;
   now: number;
 }
 
@@ -144,7 +148,7 @@ export async function guestView(tableId: string, sessionId: string, now = Date.n
   const table = await loadTable(db, tableId);
   const session = await getSession(db, table, sessionId);
   const rid = table.restaurantId;
-  const [restaurant, menu, orders, openRequests, bill, reviewRows] = await Promise.all([
+  const [restaurant, menu, orders, openRequests, bill, reviewRows, growth] = await Promise.all([
     loadRestaurant(db, rid),
     loadMenu(db, rid),
     loadOrders(db, rid, { sessionIds: [session.id] }),
@@ -154,6 +158,7 @@ export async function guestView(tableId: string, sessionId: string, now = Date.n
       .select()
       .from(s.reviews)
       .where(and(eq(s.reviews.restaurantId, rid), eq(s.reviews.sessionId, session.id))),
+    guestGrowth(db, rid, session.id),
   ]);
   return {
     restaurant,
@@ -164,6 +169,7 @@ export async function guestView(tableId: string, sessionId: string, now = Date.n
     openRequests,
     bill,
     review: reviewRows[0] ? toReview(reviewRows[0]) : undefined,
+    growth,
     now,
   };
 }
@@ -281,7 +287,11 @@ export async function prepareBill(
     const restaurant = await loadRestaurant(tx, rid);
     let bill: Bill;
     try {
-      const summary = computeBill(orders, { taxPercent: restaurant.taxPercent, tipPercent: opts.tipPercent });
+      const plain = computeBill(orders, { taxPercent: restaurant.taxPercent, tipPercent: opts.tipPercent });
+      const discount = await visitDiscount(tx, rid, session.id, plain.subtotal, now);
+      const summary = discount
+        ? computeBill(orders, { taxPercent: restaurant.taxPercent, tipPercent: opts.tipPercent, discount })
+        : plain;
       bill = createBill({ id: existing?.id ?? newId("bill"), sessionId: session.id, summary, splitCount: opts.splitCount, at: now });
     } catch (err) {
       throw new StoreError(400, err instanceof Error ? err.message : "Invalid bill");
@@ -326,6 +336,7 @@ export async function payShare(
         .update(s.serviceRequests)
         .set({ resolvedAt: toDate(now), resolvedBy: "system" })
         .where(and(eq(s.serviceRequests.sessionId, session.id), isNull(s.serviceRequests.resolvedAt)));
+      await onVisitPaid(tx, rid, session.id, bill, now);
     }
     return bill;
   });
@@ -336,13 +347,15 @@ export async function addReview(
   sessionId: string,
   input: { rating: Review["rating"]; comment?: string },
   now = Date.now(),
-): Promise<Review> {
+): Promise<Review & { routedTo: ReviewRoute; googleReviewUrl?: string }> {
   return withVisit(tableId, sessionId, async (tx, { table, session }) => {
     const rid = table.restaurantId;
     const bill = await loadBill(tx, rid, session.id);
     if (!bill || !isFullyPaid(bill)) throw new StoreError(409, "Reviews open after the bill is paid.");
     const [dupe] = await tx.select({ id: s.reviews.id }).from(s.reviews).where(eq(s.reviews.sessionId, session.id));
     if (dupe) throw new StoreError(409, "Thanks, we already have your review.");
+    const restaurant = await loadRestaurant(tx, rid);
+    const route = routeReview(input.rating, restaurant.googleReviewUrl);
     const review: Review = {
       id: newId("rev"),
       sessionId: session.id,
@@ -358,9 +371,21 @@ export async function addReview(
       tableId: table.id,
       rating: review.rating,
       comment: review.comment ?? null,
+      routedTo: route,
       createdAt: toDate(now),
     });
-    return review;
+    if (route === "owner") {
+      await tx.insert(s.ownerAlerts).values({
+        id: newId("alr"),
+        restaurantId: rid,
+        kind: "low_rating",
+        reviewId: review.id,
+        sessionId: session.id,
+        message: `${review.rating}★ from table ${table.label}${review.comment ? `: “${review.comment}”` : " (no comment)"}`,
+        createdAt: toDate(now),
+      });
+    }
+    return { ...review, routedTo: route, googleReviewUrl: route === "google" ? restaurant.googleReviewUrl : undefined };
   });
 }
 

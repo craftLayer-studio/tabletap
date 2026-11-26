@@ -18,3 +18,4 @@ export async function resetDemo(now = Date.now()): Promise<void> {
 }
 export * from "./admin";
 export * from "./auth";
+export * from "./growth";
