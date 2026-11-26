@@ -8,3 +8,4 @@ export * from "./service";
 export * from "./table";
 export * from "./report";
 export * from "./time";
+export * from "./restaurant";

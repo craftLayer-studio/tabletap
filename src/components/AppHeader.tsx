@@ -10,7 +10,7 @@ export function AppHeader({ title, subtitle }: { title: string; subtitle?: strin
         <h1>{title}</h1>
         {subtitle ? <p>{subtitle}</p> : null}
       </div>
-      <span className="demo-pill" title="All data is in memory and resets when the server restarts">
+      <span className="demo-pill" title="Demo restaurant with made-up data">
         Demo
       </span>
     </header>

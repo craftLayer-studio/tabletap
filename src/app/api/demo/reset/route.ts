@@ -1,10 +1,10 @@
 import { handle } from "@/server/http";
-import { resetState } from "@/server/store";
+import { resetDemo } from "@/server/store";
 
-/** Re-seed the in-memory demo. Prototype only: M1 removes this route. */
+/** Wipe the database and re-seed the demo restaurant. */
 export async function POST() {
-  return handle(() => {
-    resetState();
+  return handle(async () => {
+    await resetDemo();
     return { ok: true };
   });
 }

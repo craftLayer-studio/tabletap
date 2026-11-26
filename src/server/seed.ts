@@ -1,25 +1,17 @@
-import type { Menu, Table } from "@/domain";
+import type { Menu, Restaurant, Table } from "@/domain";
 
-export interface Restaurant {
-  id: string;
-  name: string;
-  city: string;
-  /** GST percent applied to food. The demo uses 5%; real rates depend on the outlet (see PLAN.md). */
-  taxPercent: number;
-  /** UPI ID for the demo. Deliberately not a real handle: never pay to it. */
-  upiVpa: string;
-  isDemo: boolean;
-}
+export type { Restaurant };
 
 export const DEMO_RESTAURANT: Restaurant = {
   id: "juniper-kitchen",
   name: "Juniper Kitchen",
-  city: "Demo city",
+  city: "Pune",
   taxPercent: 5,
   upiVpa: "juniper.demo@example",
   isDemo: true,
 };
 
+/** Demo tables. QR tokens are generated randomly at seed time; ids are stable for tests. */
 export const DEMO_TABLES: Table[] = Array.from({ length: 6 }, (_, i) => ({
   id: `t${i + 1}`,
   restaurantId: DEMO_RESTAURANT.id,

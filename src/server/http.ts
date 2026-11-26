@@ -1,4 +1,4 @@
-import { StoreError } from "./store";
+import { StoreError } from "./store/errors";
 
 /** Run a store call and turn the result or a StoreError into a JSON response. */
 export async function handle(fn: () => unknown): Promise<Response> {

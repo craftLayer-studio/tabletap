@@ -29,4 +29,4 @@ TableTap, a QR table-ordering prototype for Indian restaurants. Read [README.md]
 ## Commits
 
 - Conventional-style subjects (`feat:`, `fix:`, `docs:`, `test:`, `chore:`).
-- Commits made by an agent end with the line `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Never add a `Co-Authored-By` trailer or a "Generated with" line to commits or PR descriptions.

@@ -135,7 +135,7 @@ export function StaffApp() {
             </section>
 
             <p className="muted small reset-row">
-              Demo data lives in server memory.{" "}
+              Demo data is stored in the database.{" "}
               <button type="button" className="link-button" disabled={busy} onClick={() => act("/api/demo/reset")}>
                 Reset demo
               </button>
